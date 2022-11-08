@@ -1,4 +1,5 @@
 const fs = require('fs')
+const promises = require('fs/promises');
 const path = require('path')
 const filesPath = path.join(__dirname, 'assets')
 const filesCopyPath = path.join(__dirname, 'project-dist', 'assets')
@@ -14,11 +15,12 @@ const stylesPath = path.join(__dirname, 'styles')
 	del()
 
 	async function copyFiles(src, dest) {
-		fs.mkdir(dest, { recursive: true }, error => {
+		await promises.mkdir(dest, { recursive: true }, error => {
 			if (error) throw error;
+
+			})
 			fs.writeFile(path.join(__dirname, 'project-dist', 'style.css'), "", (error) => {
 				if (error) throw error;
-			})
 			const output = fs.createWriteStream(bundleFilePath)
 			fs.readdir(stylesPath, (error, files) => {
 				if (error) throw error;
@@ -52,26 +54,29 @@ const stylesPath = path.join(__dirname, 'styles')
 const htmlFilePath = path.join(__dirname, 'project-dist', 'index.html')
 const templateFilePath = path.join(__dirname, 'template.html')
 let temp
-
-fs.readFile(templateFilePath, 'utf8', (error, data) => {
-	temp = data
-})
-
-fs.readdir(path.join(__dirname, 'components'), {withFileTypes: true}, (error, files) => {
-	files.forEach(file => {
-		let fileName = path.parse(path.join(__dirname, file.name)).name
-		let component 
-		fs.readFile(path.join(__dirname, 'components', file.name), 'utf8', (err, data) => {
-			if (err) throw err;
-			component = data;
-			temp = temp.replace(`{{${fileName}}}`, component)
-			fs.rm(bundleFilePath, {force: true, recursive: true}, error => {
-				if (error) throw error;
-				fs.writeFile(htmlFilePath, temp, (error) => {
+async function createHtml() {
+	temp = await promises.readFile(templateFilePath, 'utf8', (error, data) => {
+		// temp = data
+	})
+	// console.log(temp)
+	
+	fs.readdir(path.join(__dirname, 'components'), {withFileTypes: true}, (error, files) => {
+		files.forEach(file => {
+			let fileName = path.parse(path.join(__dirname, file.name)).name
+			let component 
+			fs.readFile(path.join(__dirname, 'components', file.name), 'utf8', (err, data) => {
+				if (err) throw err;
+				component = data;
+				temp = temp.replace(`{{${fileName}}}`, component)
+				fs.rm(bundleFilePath, {force: true, recursive: true}, error => {
 					if (error) throw error;
+					fs.writeFile(htmlFilePath, temp, (error) => {
+						if (error) throw error;
+					})
 				})
 			})
 		})
+		
 	})
-	
-})
+} 
+createHtml()
